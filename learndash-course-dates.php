@@ -10,6 +10,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly.
 }
 
+require_once plugin_dir_path( __FILE__ ) . 'includes/class-learndash-course-dates-shortcode.php';
+
 class LearnDash_Course_Dates {
 
     public function __construct() {
@@ -21,6 +23,8 @@ class LearnDash_Course_Dates {
         add_action( 'plugins_loaded', [ $this, 'init_plugin' ] );
         add_action( 'admin_init', [ $this, 'monitor_learndash_status' ] );
         add_filter( 'learndash_header_data', [ $this, 'modify_learndash_tabs_meta_boxes' ], 10, 3 );
+
+       new LearnDash_Course_Dates_Shortcode();
     }
 
     /**
@@ -97,8 +101,8 @@ class LearnDash_Course_Dates {
      * Enqueue admin scripts and styles.
      */
     public function enqueue_admin_scripts() {
-        wp_enqueue_script( 'learndash-course-dates-admin', plugins_url( 'assets/js/admin.js', __FILE__ ), [ 'jquery' ], null, true );
         wp_enqueue_script( 'learndash-datepicker', plugins_url( 'assets/js/date-picker.js', __FILE__ ), [ 'jquery', 'jquery-ui-datepicker' ], null, true );
+        wp_enqueue_script( 'learndash-course-dates-admin', plugins_url( 'assets/js/admin.js', __FILE__ ), [ 'jquery' ], null, true );
         wp_enqueue_style( 'jquery-ui-style', 'https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css' );
         wp_enqueue_style( 'learndash-course-dates-admin-style', plugins_url( 'assets/css/admin.css', __FILE__ ) );
     }
@@ -108,9 +112,11 @@ class LearnDash_Course_Dates {
      */
     public function register_metabox( $metaboxes ) {
         require_once plugin_dir_path( __FILE__ ) . 'includes/class-learndash-course-dates-meta-box.php';
+
         if ( ! isset( $metaboxes['LearnDash_Course_Dates_Meta_Box'] ) && class_exists( 'LearnDash_Course_Dates_Meta_Box' ) ) {
             $metaboxes['LearnDash_Course_Dates_Meta_Box'] = LearnDash_Course_Dates_Meta_Box::add_metabox_instance();
         }
+
         return $metaboxes;
     }
 

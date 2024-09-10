@@ -1,44 +1,25 @@
-#settings-dates-wrapper {
-    margin-top: 20px;
-}
-
-.settings-date-pair {
+.date-seat-pair {
+    display: flex;
+    align-items: center;
     margin-bottom: 10px;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: #f9f9f9;
 }
 
-.settings-date-pair label {
-    display: block;
-    margin-bottom: 5px;
+.sfwd_option_div {
+    margin-right: 10px;
 }
 
-.settings-date-pair button {
-    background-color: #ff4d4d;
-    color: #fff;
-    border: none;
-    padding: 5px 10px;
-    cursor: pointer;
-    border-radius: 3px;
-    font-size: 14px;
+.ld_date_selector {
+    display: flex;
+    align-items: center;
 }
 
-.settings-date-pair button:hover {
-    background-color: #cc0000;
+input[name="available_seats[]"] {
+    margin-left: 10px;
+    width: 60px;
+    height: 35px; 
+    margin-bottom: 6px;
 }
 
-#add-date-pair {
-    background-color: #4CAF50;
-    color: #fff;
-    border: none;
-    padding: 10px 15px;
-    cursor: pointer;
-    border-radius: 3px;
-    font-size: 16px;
-}
-
-#add-date-pair:hover {
-    background-color: #45a049;
+.button-link-delete {
+    margin-left: 10px;
 }
