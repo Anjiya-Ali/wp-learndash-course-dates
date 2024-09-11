@@ -101,6 +101,7 @@ if ( ( class_exists( 'LearnDash_Settings_Metabox' ) ) && ( ! class_exists( 'Lear
 			// Ensure both arrays are of the same length
 			$count_dates = count($available_dates);
 			$count_seats = count($available_seats);
+			
 			if ($count_dates > $count_seats) {
 				$available_seats = array_pad($available_seats, $count_dates, 0);
 			} elseif ($count_seats > $count_dates) {

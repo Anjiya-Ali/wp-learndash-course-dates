@@ -1,0 +1,48 @@
+/* Dropdown wrapper */
+.learndash-course-dates-dropdown {
+    position: relative;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+/* Label styling to match LearnDash */
+.learndash-course-dates-label {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    display: block;
+    margin-bottom: 8px;
+}
+
+/* Custom select dropdown */
+.learndash-course-dates-select {
+    width: 70%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    border-radius: 4px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    transition: border-color 0.3s ease;
+    cursor: pointer;
+}
+
+/* Hide default arrow for WebKit browsers */
+select::-ms-expand {
+    display: none;
+}
+
+.course_dates_div{
+    display: flex;
+}
+
+.fa-caret-down{
+    position: absolute;
+    top: 70%;
+    width: 32%;
+    right: 10px;
+    transform: translateY(-50%);
+    pointer-events: none;
+}

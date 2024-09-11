@@ -24,7 +24,7 @@ class LearnDash_Course_Dates {
         add_action( 'admin_init', [ $this, 'monitor_learndash_status' ] );
         add_filter( 'learndash_header_data', [ $this, 'modify_learndash_tabs_meta_boxes' ], 10, 3 );
 
-       new LearnDash_Course_Dates_Shortcode();
+        new LearnDash_Course_Dates_Shortcode();
     }
 
     /**
@@ -58,6 +58,7 @@ class LearnDash_Course_Dates {
         } else {
             // Enqueue admin scripts and styles
             add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_scripts' ] );
+            add_action('wp_enqueue_scripts', [$this, 'enqueue_font_awesome']);
 
             // Register meta boxes
             add_filter( 'learndash_post_settings_metaboxes_init_' . learndash_get_post_type_slug( 'course' ), [ $this, 'register_metabox' ] );
@@ -107,6 +108,14 @@ class LearnDash_Course_Dates {
         wp_enqueue_style( 'learndash-course-dates-admin-style', plugins_url( 'assets/css/admin.css', __FILE__ ) );
     }
 
+    /**
+     * Enqueue Font Awesome library.
+     */
+    public function enqueue_font_awesome() {
+        // Enqueue Font Awesome from CDN
+        wp_enqueue_style('font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css', array(), null);
+    }
+    
     /**
      * Register the meta box for LearnDash course dates.
      */
