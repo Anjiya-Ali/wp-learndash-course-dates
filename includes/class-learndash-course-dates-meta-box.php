@@ -161,9 +161,6 @@ if ( ( class_exists( 'LearnDash_Settings_Metabox' ) ) && ( ! class_exists( 'Lear
 		
 			return $html;
 		}
-		
-		
-		
 
 		/**
 		 * Filter settings values for metabox before saving to the database.
