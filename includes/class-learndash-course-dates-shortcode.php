@@ -21,6 +21,8 @@ class LearnDash_Course_Dates_Shortcode {
         add_action( 'woocommerce_checkout_create_order', array( $this, 'save_course_date_to_order' ), 10, 2 );
         add_action( 'init', array( $this, 'schedule_enrollment_cron' ) );
         add_action( 'enroll_users_on_selected_date', array( $this, 'enroll_users_on_selected_date_function' ) );
+        add_filter( 'learndash_payment_button_markup', array( $this, 'custom_filter_take_this_course_button' ), 99, 1 );
+        add_shortcode( 'available_course_dates_text', array( $this, 'display_course_dates_on_course_page' ) );
 
         $this->load_settings();
     }
@@ -65,13 +67,31 @@ class LearnDash_Course_Dates_Shortcode {
             return;
         }
 
-        // Fetch enrolled user count for the course.
-        $enrolled_user_count = 0;
         $user_query          = learndash_get_users_for_course( $course_id );
-        $query_results       = $user_query->get_results();
 
-        if ( ! empty( $query_results ) ) {
-            $enrolled_user_count = count( $query_results );
+        if ( !is_array( $user_query ) ) {
+            $query_results       = $user_query->get_results();
+
+            if ( ! empty( $query_results ) ) {
+                $enrolled_user_count = count( $query_results );
+            }
+        }
+
+        $scheduled_dates = array();
+
+        // Get all users
+        $args = array(
+            'fields' => 'ID', // Get only user IDs to optimize performance
+        );
+        $users = get_users( $args );
+
+        // Loop through users to find matching meta
+        $matching_users = array(); // Array to store matching users
+
+        foreach ( $users as $user_id ) {
+            // Get the scheduled course date for the specific course ID
+            $user_course_date = get_user_meta( $user_id, 'scheduled_course_date_' . $course_id, true );
+            array_push( $scheduled_dates, $user_course_date );                
         }
 
         // Fetch available dates and seats for the specified course.
@@ -123,6 +143,7 @@ class LearnDash_Course_Dates_Shortcode {
 
         // Now loop through the sorted array to generate the HTML.
         foreach ( $combined_array as $item ) {
+            $enrolled_user_count = 0;
             $course_date = $item['date'];
             $available_seats_for_date = $item['seats'];
 
@@ -131,6 +152,25 @@ class LearnDash_Course_Dates_Shortcode {
                 continue;
             }
 
+            foreach($scheduled_dates as $scheduled_date){
+                if(!empty($scheduled_date)){
+                    $date_parts = explode( '-', $scheduled_date );
+                    $month      = isset( $date_parts[0] ) ? ltrim( $date_parts[0], '0' ) : '';
+                    $day        = isset( $date_parts[1] ) ? ltrim( $date_parts[1], '0' ) : '';
+                    $year       = isset( $date_parts[2] ) ? $date_parts[2] : '';
+    
+                    if ( ! checkdate( $month, $day, $year ) ) {
+                        continue;
+                    }
+    
+                    $scheduled_date    = DateTime::createFromFormat( 'm-d-Y', sprintf( '%02d-%02d-%04d', $month, $day, $year ) );
+                    
+                    if ( $scheduled_date == $course_date ) {
+                        $enrolled_user_count++;
+                    }
+                }
+            }
+        
             // Check if all seats for this date are booked.
             if ( $available_seats_for_date == $enrolled_user_count ) {
                 $disabled = true;
@@ -291,11 +331,13 @@ class LearnDash_Course_Dates_Shortcode {
             $product_id = $item->get_product_id();
             $related_courses  =get_post_meta( $product_id, '_related_course' );
             $course_id       = isset( $related_courses[0][0] ) ? $related_courses[0][0] : 0;
-    
+            $selected_date = $item->get_meta( 'Course Date' );
+
             if ( $course_id ) {
                 $user_id = $order->get_user_id();
                 // Unenroll the user from the associated course
                 ld_update_course_access( $user_id, $course_id, true );
+                update_user_meta($user_id, 'scheduled_course_date_' . $course_id, $selected_date);
             }
         }
     }    
@@ -330,7 +372,7 @@ class LearnDash_Course_Dates_Shortcode {
             foreach ( $order->get_items() as $item ) {
                 $selected_date = $item->get_meta( 'Course Date' );
 
-                if ( $selected_date === '09-07-2025' ) {
+                if ( $selected_date === $today ) {
                     $product_id = $item->get_product_id();
                     $related_courses = get_post_meta( $product_id, '_related_course' );
                     $course_id       = isset( $related_courses[0][0] ) ? $related_courses[0][0] : 0;
@@ -344,4 +386,69 @@ class LearnDash_Course_Dates_Shortcode {
         }
     }
 
+    /**
+     * Conditionally filter the 'Take This Course' button
+     */
+    public function custom_filter_take_this_course_button( $button ) {
+        $user_id = get_current_user_id();
+        $course_id = get_the_id();
+
+        // Example condition: Check if the user has specific meta
+        $blocked_user_meta = get_user_meta( $user_id, 'scheduled_course_date_' . $course_id, true );
+    
+        // If user meta exists and matches a condition, prevent button display
+        if ( !empty($blocked_user_meta) ) {
+            // Return an empty string to hide the button
+            return '<span class="ld-text">You have already scheduled this course.</span>';
+        }
+
+        // Otherwise, return the default button
+        return $button;
+    }
+
+    /**
+     * Display course dates on course page
+     */
+    public function display_course_dates_on_course_page() {
+        $course_id = get_the_ID();
+    
+        if (empty($course_id)) {
+            return '<p>No course ID found.</p>';
+        }
+    
+        // Get available dates for the course (assuming dates are stored as 'Y-m-d' format in an array)
+        $available_dates = $this->get_available_dates_for_course($course_id);
+    
+        // Get the current date for comparison
+        $current_date = date('m-d-Y');
+    
+        // Filter out past dates
+        $future_dates = array_filter($available_dates, function($date) use ($current_date) {
+            return strtotime($date) >= strtotime($current_date);
+        });
+    
+        // Start building HTML output
+        $html = '';
+    
+        // Check if there are future dates available
+        if (!empty($future_dates)) {
+            // Sort future dates in ascending order (optional)
+            sort($future_dates);
+    
+            $html .= '<p><strong>Available Course Dates: </strong>';
+    
+            foreach ($future_dates as $date) {
+                // Display each available date
+                $html .= '<span>' . esc_html($date) . ', </span>';
+            }
+    
+            $html .= '</p>';
+        } else {
+            // If no future dates are available, show the fallback message
+            $html .= '<p><strong>Date: </strong> Next Course Dates Will Be Published Soon! </p>';
+        }
+    
+        return $html;
+    }    
+    
 }
