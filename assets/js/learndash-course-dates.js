@@ -1,5 +1,10 @@
 jQuery(function($) {
     $('form.cart').on('submit', function(e) {
+        
+        if (!$('#course_dates').length) {
+            return;
+        }
+
         var selectedDate = $('#course_dates').val();
         var product_id = $('#product_id').val(); // Retrieve the product ID from the hidden field
         

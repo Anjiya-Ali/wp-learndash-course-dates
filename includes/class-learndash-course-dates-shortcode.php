@@ -18,6 +18,7 @@ class LearnDash_Course_Dates_Shortcode {
         add_action( 'wp_ajax_nopriv_store_selected_course_date', array( $this, 'store_selected_course_date_in_session' ) );
         add_action( 'woocommerce_before_add_to_cart_button', array( $this, 'add_hidden_product_id_field' ) );
         add_action( 'woocommerce_thankyou', array( $this, 'unenroll_user_after_purchase' ), 10, 1 );
+        add_action( 'woocommerce_order_status_completed', array( $this, 'unenroll_user_after_purchase' ), 99, 1 );
         add_action( 'woocommerce_checkout_create_order', array( $this, 'save_course_date_to_order' ), 10, 2 );
         add_action( 'init', array( $this, 'schedule_enrollment_cron' ) );
         add_action( 'enroll_users_on_selected_date', array( $this, 'enroll_users_on_selected_date_function' ) );
@@ -334,10 +335,14 @@ class LearnDash_Course_Dates_Shortcode {
             $selected_date = $item->get_meta( 'Course Date' );
 
             if ( $course_id ) {
-                $user_id = $order->get_user_id();
-                // Unenroll the user from the associated course
-                ld_update_course_access( $user_id, $course_id, true );
-                update_user_meta($user_id, 'scheduled_course_date_' . $course_id, $selected_date);
+                $multiple_dates = $this->get_multiple_dates_for_course( $course_id );
+
+                if( $multiple_dates ){
+                    $user_id = $order->get_user_id();
+                    // Unenroll the user from the associated course
+                    ld_update_course_access( $user_id, $course_id, true );
+                    update_user_meta($user_id, 'scheduled_course_date_' . $course_id, $selected_date);
+                }
             }
         }
     }    
@@ -418,32 +423,34 @@ class LearnDash_Course_Dates_Shortcode {
     
         // Get available dates for the course (assuming dates are stored as 'Y-m-d' format in an array)
         $available_dates = $this->get_available_dates_for_course($course_id);
-    
-        // Get the current date for comparison
-        $current_date = date('m-d-Y');
-    
-        // Filter out past dates
-        $future_dates = array_filter($available_dates, function($date) use ($current_date) {
-            return strtotime($date) >= strtotime($current_date);
-        });
-    
+        
         // Start building HTML output
         $html = '';
-    
-        // Check if there are future dates available
-        if (!empty($future_dates)) {
-            // Sort future dates in ascending order (optional)
-            sort($future_dates);
-    
-            $html .= '<p><strong>Available Course Dates: </strong>';
-    
-            foreach ($future_dates as $date) {
-                // Display each available date
-                $html .= '<span>' . esc_html($date) . ', </span>';
-            }
-    
-            $html .= '</p>';
-        } else {
+
+        if( !empty ( $available_dates ) ){
+            // Get the current date for comparison
+            $current_date = date('m-d-Y');
+                
+            // Filter out past dates
+            $future_dates = array_filter($available_dates, function($date) use ($current_date) {
+                return strtotime($date) >= strtotime($current_date);
+            });
+
+            // Check if there are future dates available
+            if (!empty($future_dates)) {
+                // Sort future dates in ascending order (optional)
+                sort($future_dates);
+
+                $html .= '<p><strong>Available Course Dates: </strong>';
+
+                foreach ($future_dates as $date) {
+                    // Display each available date
+                    $html .= '<span>' . esc_html($date) . ', </span>';
+                }
+
+                $html .= '</p>';
+            } 
+        }else {
             // If no future dates are available, show the fallback message
             $html .= '<p><strong>Date: </strong> Next Course Dates Will Be Published Soon! </p>';
         }
